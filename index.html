@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>⚡ REFLEKS — reaksiya o'yini</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;900&family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#120E24;
+    --panel:#1C1738;
+    --panel-2:#241D48;
+    --ink:#F4F1FF;
+    --muted:#8D85B8;
+    --line:#332B5E;
+    --tap:#35E273;    /* Tez bos */
+    --emoji:#FFB020;  /* Emojini top */
+    --mem:#29B6FF;    /* Sonni eslab qol */
+    --stroop:#FF4D8D; /* Stroop */
+    --danger:#FF4949;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+  html,body{height:100%;overflow:hidden}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:'Manrope',sans-serif;
+    display:flex;flex-direction:column;
+    max-width:520px;margin:0 auto;
+    touch-action:manipulation;
+  }
+  h1,h2,.display{font-family:'Unbounded',sans-serif}
+
+  /* ---------- PULS CHIZIG'I (imzo element) ---------- */
+  .pulse-wrap{height:44px;flex-shrink:0;overflow:hidden;position:relative;opacity:.9}
+  .pulse-wrap svg{position:absolute;left:0;top:0;height:44px;width:200%;
+    animation:pulseScroll 6s linear infinite}
+  @keyframes pulseScroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  .pulse-line{fill:none;stroke:var(--accent,#6C5CE7);stroke-width:2.5;
+    filter:drop-shadow(0 0 6px var(--accent,#6C5CE7))}
+  @media (prefers-reduced-motion:reduce){
+    .pulse-wrap svg{animation:none}
+    *{transition:none!important;animation-duration:.01s!important}
+  }
+
+  /* ---------- EKRANLAR ---------- */
+  .screen{flex:1;display:none;flex-direction:column;padding:8px 18px 20px;overflow-y:auto}
+  .screen.active{display:flex}
+
+  /* ---------- MENYU ---------- */
+  .brand{margin:6px 0 2px}
+  .brand h1{font-size:30px;font-weight:900;letter-spacing:1px;line-height:1.1}
+  .brand h1 span{color:#6C5CE7}
+  .brand p{color:var(--muted);font-size:13px;font-weight:700;margin-top:4px}
+  .cards{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:18px}
+  .card{
+    background:var(--panel);border:1px solid var(--line);border-radius:18px;
+    padding:16px 14px;min-height:128px;position:relative;overflow:hidden;
+    display:flex;flex-direction:column;justify-content:space-between;
+    cursor:pointer;transition:transform .12s ease;
+  }
+  .card:active{transform:scale(.96)}
+  .card::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c)}
+  .card .ic{font-size:26px}
+  .card .nm{font-family:'Unbounded';font-size:13px;font-weight:700;margin-top:8px;line-height:1.25}
+  .card .best{font-size:11px;color:var(--muted);font-weight:700;margin-top:6px}
+  .card .best b{color:var(--c)}
+  .statsbtn{
+    margin-top:14px;background:var(--panel);border:1px solid var(--line);
+    border-radius:14px;padding:13px;text-align:center;font-weight:800;
+    color:var(--muted);cursor:pointer;font-size:14px;
+  }
+  .statsbtn:active{transform:scale(.97)}
+
+  /* ---------- O'YIN SARLAVHASI ---------- */
+  .ghead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-shrink:0}
+  .ghead h2{font-size:15px;font-weight:700;color:var(--accent)}
+  .ghead .rnd{font-size:12px;font-weight:800;color:var(--muted);
+    background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:5px 12px}
+  .backbtn{background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;padding:4px 8px 4px 0}
+
+  /* ---------- O'YIN MAYDONI ---------- */
+  .arena{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center}
+  .bigmsg{font-family:'Unbounded';font-size:22px;font-weight:700;line-height:1.3}
+  .submsg{color:var(--muted);font-size:14px;font-weight:700;max-width:280px}
+
+  /* Tez bos maydoni */
+  .tapzone{
+    width:100%;flex:1;border-radius:22px;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:10px;cursor:pointer;
+    font-family:'Unbounded';font-weight:900;font-size:26px;
+    transition:background .1s;border:1px solid var(--line);
+  }
+  .tapzone.wait{background:linear-gradient(160deg,#3A1230,#241D48);color:var(--muted)}
+  .tapzone.go{background:radial-gradient(circle at 50% 40%,#2FBF64,#178A43);color:#06170C;
+    box-shadow:0 0 60px rgba(53,226,115,.45)}
+  .tapzone small{font-family:'Manrope';font-size:13px;font-weight:700;opacity:.75}
+
+  /* Emoji panjara */
+  .egrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+  .egrid button{
+    background:var(--panel);border:1px solid var(--line);border-radius:16px;
+    font-size:34px;padding:16px 0;cursor:pointer;transition:transform .08s;
+  }
+  .egrid button:active{transform:scale(.9)}
+  .target-emoji{font-size:52px;line-height:1}
+
+  /* Xotira */
+  .memnum{font-family:'Unbounded';font-size:44px;font-weight:900;letter-spacing:6px;color:var(--mem);
+    text-shadow:0 0 24px rgba(41,182,255,.5)}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+  .opts button{
+    background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:16px 6px;color:var(--ink);font-family:'Unbounded';
+    font-size:17px;font-weight:700;cursor:pointer;letter-spacing:2px;
+  }
+  .opts button:active{transform:scale(.95)}
+
+  /* Stroop */
+  .stroop-dot{width:96px;height:96px;border-radius:50%;
+    box-shadow:0 0 46px var(--dc);background:var(--dc);
+    display:flex;align-items:center;justify-content:center}
+  .stroop-word{font-family:'Unbounded';font-size:26px;font-weight:900;letter-spacing:2px}
+  .cbtns{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+  .cbtns button{
+    border:none;border-radius:14px;padding:16px 4px;cursor:pointer;
+    font-family:'Unbounded';font-size:14px;font-weight:700;color:#120E24;
+  }
+  .cbtns button:active{transform:scale(.95)}
+
+  /* Taymer chizig'i */
+  .tbar{width:100%;height:6px;background:var(--panel);border-radius:99px;overflow:hidden;flex-shrink:0}
+  .tbar i{display:block;height:100%;background:var(--accent);border-radius:99px;width:100%}
+
+  /* ---------- NATIJA EKRANI ---------- */
+  .result{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
+  .msval{font-family:'Unbounded';font-weight:900;font-size:64px;line-height:1;color:var(--accent);
+    text-shadow:0 0 34px color-mix(in srgb,var(--accent) 55%,transparent)}
+  .msval small{font-size:20px;color:var(--muted);text-shadow:none;margin-left:4px}
+  .verdict{font-size:16px;font-weight:800}
+  .record{background:linear-gradient(90deg,#FFB020,#FF4D8D);-webkit-background-clip:text;
+    background-clip:text;color:transparent;font-family:'Unbounded';font-size:14px;font-weight:700}
+  .rrow{display:flex;gap:20px;color:var(--muted);font-size:13px;font-weight:700}
+  .rrow b{color:var(--ink)}
+  .btn{
+    width:100%;border:none;border-radius:16px;padding:16px;cursor:pointer;
+    font-family:'Unbounded';font-size:15px;font-weight:700;
+  }
+  .btn.primary{background:var(--accent);color:#0E0A1F}
+  .btn.ghost{background:var(--panel);color:var(--muted);border:1px solid var(--line)}
+  .btn:active{transform:scale(.97)}
+
+  /* ---------- STATISTIKA ---------- */
+  .stat-list{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .stat-item{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;display:flex;justify-content:space-between;align-items:center}
+  .stat-item .l{font-weight:800;font-size:14px}
+  .stat-item .v{font-family:'Unbounded';font-weight:700;font-size:15px;color:var(--c)}
+  .flash{animation:flash .35s}
+  @keyframes flash{0%{background:#3A1230}100%{background:transparent}}
+</style>
+</head>
+<body>
+
+<!-- Puls chizig'i -->
+<div class="pulse-wrap" id="pulseWrap">
+  <svg viewBox="0 0 800 44" preserveAspectRatio="none">
+    <path class="pulse-line" id="pulseLine" d="M0 22 H60 L75 22 90 6 105 38 118 22 H200 L215 22 230 10 243 34 256 22 H340 L355 22 368 4 384 40 398 22 H460 L475 22 488 12 500 32 512 22 H600 L615 22 628 8 642 36 655 22 H800
+      M800 22 H860 L875 22 890 6 905 38 918 22 H1000 L1015 22 1030 10 1043 34 1056 22 H1140 L1155 22 1168 4 1184 40 1198 22 H1260 L1275 22 1288 12 1300 32 1312 22 H1400 L1415 22 1428 8 1442 36 1455 22 H1600"/>
+  </svg>
+</div>
+
+<!-- ================= MENYU ================= -->
+<section class="screen active" id="scr-menu">
+  <div class="brand">
+    <h1>REF<span>LEKS</span></h1>
+    <p>Nerv signalingiz qancha tez? Sinab ko'ring.</p>
+  </div>
+  <div class="cards">
+    <div class="card" style="--c:var(--tap)" onclick="Game.start('tap')">
+      <div><div class="ic">⚡</div><div class="nm">TEZ BOS</div></div>
+      <div class="best" id="best-tap">Rekord: <b>—</b></div>
+    </div>
+    <div class="card" style="--c:var(--emoji)" onclick="Game.start('emoji')">
+      <div><div class="ic">🎯</div><div class="nm">EMOJINI TOP</div></div>
+      <div class="best" id="best-emoji">Rekord: <b>—</b></div>
+    </div>
+    <div class="card" style="--c:var(--mem)" onclick="Game.start('memory')">
+      <div><div class="ic">🧠</div><div class="nm">SONNI ESLAB QOL</div></div>
+      <div class="best" id="best-memory">Rekord: <b>—</b></div>
+    </div>
+    <div class="card" style="--c:var(--stroop)" onclick="Game.start('stroop')">
+      <div><div class="ic">🌈</div><div class="nm">STROOP TEST</div></div>
+      <div class="best" id="best-stroop">Rekord: <b>—</b></div>
+    </div>
+  </div>
+  <div class="statsbtn" onclick="UI.showStats()">📊 Mening natijalarim</div>
+</section>
+
+<!-- ================= O'YIN ================= -->
+<section class="screen" id="scr-game">
+  <div class="ghead">
+    <button class="backbtn" onclick="Game.quit()">‹</button>
+    <h2 id="g-title"></h2>
+    <div class="rnd" id="g-round"></div>
+  </div>
+  <div class="tbar" id="g-tbar" style="display:none"><i id="g-tfill"></i></div>
+  <div class="arena" id="g-arena"></div>
+</section>
+
+<!-- ================= NATIJA ================= -->
+<section class="screen" id="scr-result">
+  <div class="result">
+    <div style="font-size:44px" id="r-icon"></div>
+    <div class="msval" id="r-val"></div>
+    <div class="verdict" id="r-verdict"></div>
+    <div class="record" id="r-record" style="display:none">🏅 YANGI SHAXSIY REKORD!</div>
+    <div class="rrow" id="r-extra"></div>
+    <button class="btn primary" id="r-again">🔄 Yana o'ynash</button>
+    <button class="btn ghost" onclick="UI.show('menu')">🏠 Bosh menyu</button>
+  </div>
+</section>
+
+<!-- ================= STATISTIKA ================= -->
+<section class="screen" id="scr-stats">
+  <div class="ghead">
+    <button class="backbtn" onclick="UI.show('menu')">‹</button>
+    <h2 style="color:var(--ink)">📊 Natijalarim</h2><div></div>
+  </div>
+  <div class="stat-list" id="stat-list"></div>
+</section>
+
+<script>
+/* ============================================================
+   TELEGRAM INTEGRATSIYASI
+============================================================ */
+const tg = window.Telegram?.WebApp;
+try{ tg?.ready(); tg?.expand(); tg?.setHeaderColor('#120E24'); tg?.setBackgroundColor('#120E24'); }catch(e){}
+
+function haptic(type){ // 'light' | 'success' | 'error'
+  try{
+    if(!tg?.HapticFeedback) return;
+    if(type==='success') tg.HapticFeedback.notificationOccurred('success');
+    else if(type==='error') tg.HapticFeedback.notificationOccurred('error');
+    else tg.HapticFeedback.impactOccurred('light');
+  }catch(e){}
+}
+
+/* ============================================================
+   TOVUSH (Web Audio - qisqa signallar)
+============================================================ */
+let AC=null;
+function beep(freq=880,dur=.08,type='sine',vol=.15){
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.type=type;o.frequency.value=freq;
+    g.gain.setValueAtTime(vol,AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+dur);
+    o.connect(g);g.connect(AC.destination);
+    o.start();o.stop(AC.currentTime+dur);
+  }catch(e){}
+}
+const sndGo=()=>beep(1200,.09,'square',.12);
+const sndOk=()=>{beep(880,.07);setTimeout(()=>beep(1320,.09),70)};
+const sndNo=()=>beep(180,.2,'sawtooth',.18);
+
+/* ============================================================
+   SAQLASH: Telegram CloudStorage -> localStorage -> xotira
+============================================================ */
+const Store={
+  mem:{},
+  key:'refleks_v1',
+  data:{tap:null,emoji:null,memory:null,stroop:null,games:0},
+  load(cb){
+    try{
+      if(tg?.CloudStorage){
+        tg.CloudStorage.getItem(this.key,(err,val)=>{
+          if(!err&&val){try{this.data={...this.data,...JSON.parse(val)}}catch(e){}}
+          else this._loadLocal();
+          cb&&cb();
+        });
+        return;
+      }
+    }catch(e){}
+    this._loadLocal(); cb&&cb();
+  },
+  _loadLocal(){
+    try{const v=localStorage.getItem(this.key);
+      if(v)this.data={...this.data,...JSON.parse(v)};}catch(e){
+      this.data={...this.data,...this.mem};
+    }
+  },
+  save(){
+    const s=JSON.stringify(this.data);
+    try{tg?.CloudStorage?.setItem(this.key,s,()=>{});}catch(e){}
+    try{localStorage.setItem(this.key,s);}catch(e){this.mem=this.data;}
+  },
+  /* better: 'min' (kichik yaxshi) yoki 'max' (katta yaxshi) */
+  submit(game,score,better){
+    this.data.games++;
+    const old=this.data[game];
+    const isRec= old==null || (better==='min'? score<old : score>old);
+    if(isRec) this.data[game]=score;
+    this.save();
+    return isRec;
+  }
+};
+
+/* ============================================================
+   UI BOSHQARUVI
+============================================================ */
+const GAMES={
+  tap:   {name:'⚡ TEZ BOS',        color:'var(--tap)',    unit:'ms', better:'min'},
+  emoji: {name:'🎯 EMOJINI TOP',    color:'var(--emoji)',  unit:'ms', better:'min'},
+  memory:{name:'🧠 SONNI ESLAB QOL',color:'var(--mem)',    unit:'daraja', better:'max'},
+  stroop:{name:'🌈 STROOP TEST',    color:'var(--stroop)', unit:'ball', better:'min'},
+};
+const $=id=>document.getElementById(id);
+
+const UI={
+  show(name){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    $('scr-'+name).classList.add('active');
+    if(name==='menu'){this.setAccent('#6C5CE7');this.refreshBests();}
+    haptic('light');
+  },
+  setAccent(c){
+    document.documentElement.style.setProperty('--accent',c);
+    $('pulseLine').style.stroke='';
+    document.querySelectorAll('.pulse-line').forEach(p=>p.style.stroke=c==='#6C5CE7'?'':'');
+  },
+  refreshBests(){
+    for(const g in GAMES){
+      const v=Store.data[g];
+      $('best-'+g).innerHTML='Rekord: <b>'+(v==null?'—':v+' '+GAMES[g].unit)+'</b>';
+    }
+  },
+  showStats(){
+    const list=$('stat-list');list.innerHTML='';
+    for(const g in GAMES){
+      const v=Store.data[g];
+      list.innerHTML+=`<div class="stat-item" style="--c:${GAMES[g].color}">
+        <span class="l">${GAMES[g].name}</span>
+        <span class="v">${v==null?'—':v+' '+GAMES[g].unit}</span></div>`;
+    }
+    list.innerHTML+=`<div class="stat-item" style="--c:#6C5CE7">
+      <span class="l">🎮 Jami o'yinlar</span><span class="v">${Store.data.games}</span></div>`;
+    this.show('stats');
+  },
+  result(game,valText,verdict,isRecord,extraHTML,icon){
+    const G=GAMES[game];
+    document.documentElement.style.setProperty('--accent',getComputedStyle(document.documentElement).getPropertyValue(G.color.slice(4,-1))||'');
+    $('r-icon').textContent=icon;
+    $('r-val').innerHTML=valText;
+    $('r-verdict').textContent=verdict;
+    $('r-record').style.display=isRecord?'block':'none';
+    $('r-extra').innerHTML=extraHTML||'';
+    $('r-again').onclick=()=>Game.start(game);
+    this.show('result');
+    if(isRecord){haptic('success');sndOk();}
+  }
+};
+
+/* ============================================================
+   O'YIN DVIGATELI
+============================================================ */
+const Game={
+  current:null, timers:[],
+  clearTimers(){this.timers.forEach(t=>clearTimeout(t));this.timers=[];},
+  wait(ms){return new Promise(r=>{this.timers.push(setTimeout(r,ms))})},
+  start(game){
+    this.clearTimers();
+    this.current=game;
+    const G=GAMES[game];
+    // Accent rangini olish
+    const cssVar=G.color.slice(4,-1); // var(--tap) -> --tap
+    const col=getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
+    document.documentElement.style.setProperty('--accent',col);
+    $('g-title').textContent=G.name;
+    $('g-tbar').style.display='none';
+    UI.show('game');
+    this[game]();
+  },
+  quit(){this.clearTimers();UI.show('menu');},
+
+  /* ---------- 1. TEZ BOS: 5 raund, o'rtacha ---------- */
+  async tap(){
+    const ROUNDS=5, times=[]; let falseStarts=0;
+    const arena=$('g-arena');
+    for(let r=1;r<=ROUNDS;r++){
+      $('g-round').textContent=r+'/'+ROUNDS;
+      let done=false;
+      // Kutish bosqichi
+      await new Promise(async resolve=>{
+        arena.innerHTML=`<div class="tapzone wait" id="tz">
+          KUTIB TUR...<small>Yashil bo'lganda bos</small></div>`;
+        const tz=$('tz');
+        let goTime=0, state='wait';
+        tz.onpointerdown=()=>{
+          if(state==='wait'){ // Aldanib bosdi!
+            falseStarts++; haptic('error'); sndNo();
+            tz.style.background='#5A1520';
+            tz.innerHTML=`ALDANDINGIZ! 😅<small>Yashilni kuting...</small>`;
+            this.clearTimers();
+            this.timers.push(setTimeout(()=>{resolve();},900));
+            state='dead';
+          }else if(state==='go'){
+            const ms=Math.round(performance.now()-goTime);
+            times.push(ms); done=true; haptic('light'); sndOk();
+            tz.classList.remove('go');
+            tz.innerHTML=`${ms} <small>ms</small>`;
+            tz.style.background='var(--panel-2)';
+            this.timers.push(setTimeout(resolve,650));
+            state='dead';
+          }
+        };
+        this.timers.push(setTimeout(()=>{
+          if(state!=='wait')return;
+          state='go'; sndGo(); haptic('light');
+          tz.classList.remove('wait');tz.classList.add('go');
+          tz.innerHTML=`BOS!!!`;
+          goTime=performance.now();
+        },1200+Math.random()*2800));
+      });
+      if(this.current!=='tap')return;
+      if(!done)r--; // aldanib bosgan raund qayta o'ynaladi
+    }
+    const avg=Math.round(times.reduce((a,b)=>a+b,0)/times.length);
+    const best=Math.min(...times);
+    const rec=Store.submit('tap',avg,'min');
+    const verdict= avg<220?'🚀 Chaqmoqdek tezsiz!': avg<300?'🔥 Professional daraja!':
+                   avg<400?'👍 O\u2018rtachadan tez!': avg<550?'🙂 O\u2018rtacha natija.':'🐢 Mashq qilish kerak!';
+    UI.result('tap',`${avg}<small>ms</small>`,verdict,rec,
+      `<span>Eng tez: <b>${best} ms</b></span><span>Aldanish: <b>${falseStarts}</b></span>`,'⚡');
+  },
+
+  /* ---------- 2. EMOJINI TOP: 5 raund ---------- */
+  async emoji(){
+    const EM=["🍎","🍌","🍇","🍓","🍊","🥝","🍒","🍍","🥑","🍉","🍋","🫐"];
+    const ROUNDS=5, times=[]; let errors=0;
+    const arena=$('g-arena');
+    for(let r=1;r<=ROUNDS;r++){
+      $('g-round').textContent=r+'/'+ROUNDS;
+      await new Promise(resolve=>{
+        const target=EM[Math.floor(Math.random()*EM.length)];
+        const shuffled=[...EM].sort(()=>Math.random()-.5);
+        arena.innerHTML=`
+          <div class="submsg">Toping va bosing:</div>
+          <div class="target-emoji">${target}</div>
+          <div class="egrid">${shuffled.map(e=>`<button data-e="${e}">${e}</button>`).join('')}</div>`;
+        const t0=performance.now();
+        arena.querySelectorAll('.egrid button').forEach(b=>{
+          b.onpointerdown=()=>{
+            if(b.dataset.e===target){
+              times.push(Math.round(performance.now()-t0));
+              haptic('light');sndOk();
+            }else{errors++;haptic('error');sndNo();times.push(Math.round(performance.now()-t0)+400);}
+            resolve();
+          };
+        });
+      });
+      if(this.current!=='emoji')return;
+    }
+    const avg=Math.round(times.reduce((a,b)=>a+b,0)/times.length);
+    const rec=Store.submit('emoji',avg,'min');
+    const verdict= errors===0&&avg<1100?'🦅 Burgut ko\u2018z!': errors===0?'🏆 Bexato!':
+                   errors<=1?'👍 Yaxshi!':'🙂 Diqqatliroq bo\u2018ling!';
+    UI.result('emoji',`${avg}<small>ms</small>`,verdict,rec,
+      `<span>Xatolar: <b>${errors}</b></span>`,'🎯');
+  },
+
+  /* ---------- 3. SONNI ESLAB QOL: daraja o'sib boradi ---------- */
+  async memory(){
+    let level=1, digits=4;
+    const arena=$('g-arena');
+    while(true){
+      $('g-round').textContent=digits+' xonali';
+      const min=Math.pow(10,digits-1), max=Math.pow(10,digits)-1;
+      const target=min+Math.floor(Math.random()*(max-min));
+      // Ko'rsatish
+      arena.innerHTML=`<div class="submsg">Eslab qoling!</div>
+        <div class="memnum">${target}</div>`;
+      haptic('light');
+      await this.wait(1200+digits*350);
+      if(this.current!=='memory')return;
+      // Variantlar
+      const variants=new Set([target]);
+      while(variants.size<4){
+        const d=String(target).split('');
+        const p=Math.floor(Math.random()*d.length);
+        d[p]=String(Math.floor(Math.random()*10));
+        if(d[0]==='0')d[0]='1';
+        variants.add(parseInt(d.join('')));
+      }
+      const opts=[...variants].sort(()=>Math.random()-.5);
+      const ok=await new Promise(resolve=>{
+        arena.innerHTML=`<div class="submsg">Qaysi son edi?</div>
+          <div class="opts">${opts.map(v=>`<button data-v="${v}">${v}</button>`).join('')}</div>`;
+        arena.querySelectorAll('.opts button').forEach(b=>{
+          b.onpointerdown=()=>resolve(parseInt(b.dataset.v)===target);
+        });
+      });
+      if(this.current!=='memory')return;
+      if(ok){
+        haptic('success');sndOk();
+        arena.innerHTML=`<div class="bigmsg" style="color:var(--mem)">✅ To'g'ri!</div>
+          <div class="submsg">Keyingi daraja: ${digits+1} xonali son</div>`;
+        level++; digits++;
+        await this.wait(900);
+        if(this.current!=='memory')return;
+      }else{
+        haptic('error');sndNo();
+        arena.innerHTML=`<div class="bigmsg" style="color:var(--danger)">❌ Noto'g'ri!</div>
+          <div class="submsg">To'g'ri javob: ${target}</div>`;
+        await this.wait(1300);
+        break;
+      }
+    }
+    if(this.current!=='memory')return;
+    const score=level; // erishilgan daraja
+    const rec=Store.submit('memory',score,'max');
+    const verdict= score>=6?'🧠 Fotoxotira!': score>=4?'🔥 Kuchli xotira!':
+                   score>=2?'👍 Yaxshi boshlanish!':'🙂 Mashq qiling!';
+    UI.result('memory',`${score}<small>-daraja</small>`,verdict,rec,
+      `<span>Oxirgi son: <b>${3+score} xonali</b></span>`,'🧠');
+  },
+
+  /* ---------- 4. STROOP: 8 raund, vaqt chizig'i bilan ---------- */
+  async stroop(){
+    const COLORS={qizil:'#FF4949',kok:'#3D8BFF',yashil:'#35E273',sariq:'#FFD028'};
+    const NAMES={qizil:"QIZIL",kok:"KO'K",yashil:"YASHIL",sariq:"SARIQ"};
+    const KEYS=Object.keys(COLORS);
+    const ROUNDS=8, LIMIT=2500;
+    let total=0, errors=0, timeouts=0;
+    const arena=$('g-arena');
+    $('g-tbar').style.display='block';
+    for(let r=1;r<=ROUNDS;r++){
+      $('g-round').textContent=r+'/'+ROUNDS;
+      const word=KEYS[Math.floor(Math.random()*4)];
+      const color=KEYS[Math.floor(Math.random()*4)];
+      const btnOrder=[...KEYS].sort(()=>Math.random()-.5);
+      const outcome=await new Promise(resolve=>{
+        arena.innerHTML=`
+          <div class="submsg">So'zga emas — <b style="color:var(--ink)">rangga</b> qarab bosing!</div>
+          <div class="stroop-dot" style="--dc:${COLORS[color]}">
+            <span class="stroop-word">${NAMES[word]}</span>
+          </div>
+          <div class="cbtns">${btnOrder.map(k=>
+            `<button data-k="${k}" style="background:${COLORS[k]}">${NAMES[k]}</button>`).join('')}</div>`;
+        const t0=performance.now();
+        // Vaqt chizig'i
+        const fill=$('g-tfill');
+        fill.style.transition='none';fill.style.width='100%';
+        requestAnimationFrame(()=>{fill.style.transition=`width ${LIMIT}ms linear`;fill.style.width='0%';});
+        const to=setTimeout(()=>resolve({type:'timeout'}),LIMIT);
+        this.timers.push(to);
+        arena.querySelectorAll('.cbtns button').forEach(b=>{
+          b.onpointerdown=()=>{clearTimeout(to);
+            resolve({type:b.dataset.k===color?'ok':'err',ms:Math.round(performance.now()-t0)});};
+        });
+      });
+      if(this.current!=='stroop')return;
+      if(outcome.type==='ok'){total+=outcome.ms;haptic('light');sndOk();}
+      else if(outcome.type==='err'){total+=outcome.ms+300;errors++;haptic('error');sndNo();}
+      else{total+=LIMIT;timeouts++;haptic('error');sndNo();}
+    }
+    $('g-tbar').style.display='none';
+    const score=total+errors*300;
+    const avg=Math.round(total/ROUNDS);
+    const rec=Store.submit('stroop',score,'min');
+    const verdict= errors===0&&timeouts===0?'🏆 Miyangiz aldanmadi!':
+                   errors+timeouts<=2?'👍 Yaxshi diqqat!':'🙂 So\u2018z sizni aldayapti — mashq qiling!';
+    UI.result('stroop',`${score}<small>ball</small>`,verdict,rec,
+      `<span>O'rtacha: <b>${avg} ms</b></span><span>Xato: <b>${errors}</b></span><span>Kechikish: <b>${timeouts}</b></span>`,'🌈');
+  },
+};
+
+/* ============================================================
+   ISHGA TUSHISH
+============================================================ */
+Store.load(()=>{UI.refreshBests();});
+</script>
+</body>
+</html>
